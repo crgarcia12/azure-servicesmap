@@ -1,14 +1,155 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
-    <title>Azure Service Map</title>
+    <meta charset="utf-8">
+
+    <title>Collapsible Tree Example</title>
+
+    <style>
+        .node circle {
+            fill: #fff;
+            stroke: steelblue;
+            stroke-width: 3px;
+        }
+
+        .node text {
+            font: 12px sans-serif;
+        }
+
+        .link {
+            fill: none;
+            stroke: #ccc;
+            stroke-width: 2px;
+        }
+    </style>
+
 </head>
 
 <body>
 
-    <h1>This is a Heading</h1>
-    <p>This is a paragraph.</p>
+    <!-- load the d3.js library -->
+    <script src="http://d3js.org/d3.v3.min.js"></script>
+
+    <script>
+
+        var treeData = [
+            {
+                "name": "Top Level",
+                "parent": "null",
+                "children": [
+                    {
+                        "name": "Level 2: A",
+                        "parent": "Top Level",
+                        "ico": "M28.431 27.562c0 .811-.254 1.462-.764 1.955-.512.493-1.254.796-2.23.908v1.59h-1.07v-1.546c-1.006-.01-1.928-.234-2.768-.674v-2.028c.264.215.684.423 1.264.626.578.202 1.08.318 1.504.348v-2.666c-1.078-.4-1.844-.839-2.293-1.314-.449-.477-.674-1.103-.674-1.879s.277-1.432.828-1.967c.553-.534 1.266-.846 2.139-.934v-1.362h1.07v1.333c1.029.049 1.799.215 2.307.498v1.978a5.642 5.642 0 0 0-2.307-.762v2.775c1.078.392 1.848.831 2.307 1.318.459.49.687 1.09.687 1.803zm-4.064-3.545v-2.322c-.678.122-1.018.477-1.018 1.063 0 .511.34.932 1.018 1.259zm2.117 3.647c0-.473-.35-.863-1.047-1.172v2.22c.697-.113 1.047-.462 1.047-1.048z\" class=\"msportalfx-svg-c07\"><\/path> <path d=\"M25 38.81c-7.627 0-13.811-6.183-13.811-13.809 0-7.626 6.183-13.809 13.81-13.81 7.627 0 13.81 6.182 13.81 13.809h11.19c0-13.807-11.192-25-25-25v.001C11.191.002 0 11.194 0 25.001s11.192 25 25 25a24.898 24.898 0 0 0 16.641-6.35l-7.457-8.358A13.742 13.742 0 0 1 25 38.81z\" class=\"msportalfx-svg-c14\"><\/path> <path opacity=\".1\" d=\"M25 38.81c-7.627 0-13.811-6.183-13.811-13.809 0-7.626 6.183-13.809 13.81-13.81 7.627 0 13.81 6.182 13.81 13.809h11.19c0-13.807-11.192-25-25-25v.001C11.191.002 0 11.194 0 25.001s11.192 25 25 25a24.898 24.898 0 0 0 16.641-6.35l-7.457-8.358A13.742 13.742 0 0 1 25 38.81z\" class=\"msportalfx-svg-c01",
+                        "children": [
+                            {
+                                "name": "Son of A",
+                                "parent": "Level 2: A"
+                            },
+                            {
+                                "name": "Daughter of A",
+                                "parent": "Level 2: A"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "Level 2: B",
+                        "parent": "Top Level"
+                    }
+                ]
+            }
+        ];
+
+
+
+        // ************** Generate the tree diagram  *****************
+        var margin = { top: 20, right: 120, bottom: 20, left: 120 },
+            width = 960 - margin.right - margin.left,
+            height = 500 - margin.top - margin.bottom;
+
+        var i = 0;
+
+        var tree = d3.layout.tree()
+            .size([height, width]);
+
+        var diagonal = d3.svg.diagonal()
+            .projection(function (d) { return [d.y, d.x]; });
+
+        var svg = d3.select("body").append("svg")
+            .attr("width", width + margin.right + margin.left)
+            .attr("height", height + margin.top + margin.bottom)
+            .append("g")
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+        root = treeData[0];
+        update(root);
+
+        // d3.json("https://swissresrmsstorage.z6.web.core.windows.net/data.json", function (error, treeData) {
+        //     root = treeData[0];
+        //     update(root);
+        // });
+
+        function update(source) {
+
+            // Compute the new tree layout.
+            var nodes = tree.nodes(root).reverse(),
+                links = tree.links(nodes);
+
+            // Normalize for fixed-depth.
+            nodes.forEach(function (d) { d.y = d.depth * 180; });
+
+            // Declare the nodes
+            var node = svg.selectAll("g.node")
+                .data(nodes, function (d) { return d.id || (d.id = ++i); });
+
+            // Enter the nodes.
+            var nodeEnter = node.enter().append("g")
+                .attr("class", "node")
+                .attr("transform", function (d) {
+                    return "translate(" + d.y + "," + d.x + ")";
+                });
+
+            // nodeEnter.append("circle")
+            //     .attr("r", 10)
+            //     .style("fill", "#fff");
+            
+            /// create the icon of the node from the data
+            nodeEnter.each(function (d) {
+                const sel = d3.select(this);
+
+                if(d.ico != null) {
+                    sel.append("path")
+                        .attr("d", d => d.ico);
+                } else {
+                    sel.append("circle")
+                        .attr("r", 10);
+                }
+            });
+
+            nodeEnter.append("text")
+                .attr("x", function (d) {
+                    return d.children || d._children ? -13 : 13;
+                })
+                .attr("dy", ".35em")
+                .attr("text-anchor", function (d) {
+                    return d.children || d._children ? "end" : "start";
+                })
+                .text(function (d) { return d.name; })
+                .style("fill-opacity", 1);
+
+            // Declare the links
+            var link = svg.selectAll("path.link")
+                .data(links, function (d) { return d.target.id; });
+
+            // Enter the links.
+            link.enter().insert("path", "g")
+                .attr("class", "link")
+                .attr("d", diagonal);
+
+        }
+
+    </script>
 
 </body>
 
